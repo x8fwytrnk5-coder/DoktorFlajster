@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flajster – objednávka jazdy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg: #050509;
+      --card: #111119;
+      --accent-taxi: #ffd60a;
+      --accent-senior: #3ddcff;
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --danger: #ff453a;
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1b1b2f 0, #050509 55%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 4px 2px;
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .badge-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .map-card {
+      background: rgba(10, 10, 20, 0.9);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 14px;
+    }
+
+    #map {
+      height: 220px;
+      width: 100%;
+    }
+
+    .map-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px 12px;
+      background: linear-gradient(
+        to bottom,
+        rgba(5, 5, 10, 0.95),
+        rgba(5, 5, 10, 0.98)
+      );
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .btn-ghost {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .btn-ghost span.icon {
+      font-size: 15px;
+    }
+
+    .card {
+      background: rgba(10, 10, 20, 0.96);
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 14px;
+    }
+
+    .field-group {
+      margin-bottom: 10px;
+    }
+
+    .field-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .field-input-wrap {
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(5, 5, 10, 0.9);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #050509;
+      border-radius: 14px;
+      margin-top: 4px;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.7);
+      z-index: 20;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: none;
+    }
+
+    .suggestion-item {
+      padding: 8px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .mode-btn.active-taxi {
+      background: var(--accent-taxi);
+      color: #000;
+      border-color: transparent;
+    }
+
+    .mode-btn.active-senior {
+      background: var(--accent-senior);
+      color: #000;
+      border-color: transparent;
+    }
+
+    .pill-info {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      border-radius: 999px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      background: linear-gradient(135deg, #00ffa3, #3ddcff);
+      color: #000;
+      box-shadow: 0 12px 30px rgba(0, 255, 163, 0.35);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    .result-card {
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .result-row span.label {
+      color: var(--muted);
+    }
+
+    .result-row span.value {
+      font-weight: 600;
+    }
+
+    .result-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-outline {
+      flex: 1;
+      border-radius: 999px;
+      padding: 9px 10px;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn-outline.sms {
+      border-color: var(--accent-senior);
+      color: var(--accent-senior);
+    }
+
+    .btn-outline.mail {
+      border-color: var(--accent-taxi);
+      color: var(--accent-taxi);
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <div class="header-title">Flajster</div>
+        <div class="header-sub">Jednoduchá objednávka jazdy</div>
+      </div>
+      <div class="badge-pill">Verzia 1 · Simple</div>
+    </div>
+
+    <div class="map-card">
+      <div id="map"></div>
+      <div class="map-toolbar">
+        <button id="gpsBtn" class="btn-ghost">
+          <span class="icon">📍</span>
+          <span>Použiť moju polohu</span>
+        </button>
+        <button id="driverAsPickupBtn" class="btn-ghost">
+          <span class="icon">🚕</span>
+          <span>Nástup = poloha vozidla</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-group">
+        <div class="field-label">Poloha vozidla</div>
+        <div class="field-input-wrap">
+          <input
+            type="text"
+            id="driverInput"
+            placeholder="Zadajte polohu vozidla alebo použite GPS"
+          />
+          <div id="driverSuggestions" class="suggestions"></div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Nástup</div>
+        <div class="field-input-wrap">
+          <input
+            type="text"
+            id="pickupInput"
+            placeholder="Adresa nástupu"
+          />
+          <div id="pickupSuggestions" class="suggestions"></div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Cieľ</div>
+        <div class="field-input-wrap">
+          <input
+            type="text"
+            id="dropoffInput"
+            placeholder="Adresa cieľa"
+          />
+          <div id="dropoffSuggestions" class="suggestions"></div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Typ jazdy</div>
+        <div class="mode-toggle">
+          <button id="modeTaxi" class="mode-btn active-taxi">Taxi</button>
+          <button id="modeSenior" class="mode-btn">Senior</button>
+        </div>
+        <div class="pill-info" id="modeInfo">
+          Štandardná jazda taxi podľa kilometrov.
+        </div>
+      </div>
+
+      <button id="calcBtn" class="btn-primary">Vypočítať cenu</button>
+
+      <div id="resultBox" class="result-card" style="display:none;"></div>
+
+      <div class="order-actions" id="orderActions" style="display:none;">
+        <button id="orderSmsBtn" class="btn-outline sms">SMS objednávka</button>
+        <button id="orderMailBtn" class="btn-outline mail">Email objednávka</button>
+      </div>
+
+      <div class="footer-note">
+        Výpočet je orientačný. Konečná cena môže byť upravená podľa reálnych podmienok.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 🔑 DOPLŇ SVOJ ORS API KĽÚČ
+    const ORS_API_KEY = "SEM_DAJ_SVOJ_ORS_API_KEY";
+
+    // ---------------------------------------------------------
+    // Mapa a markery
+    // ---------------------------------------------------------
+    let map = L.map("map", {
+      zoomControl: false,
+    }).setView([48.739, 19.153], 7);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+
+    let driverMarker = null;
+    let pickupMarker = null;
+    let dropoffMarker = null;
+    let routeLayer1 = null;
+    let routeLayer2 = null;
+
+    function clearRoutes() {
+      if (routeLayer1) {
+        map.removeLayer(routeLayer1);
+        routeLayer1 = null;
+      }
+      if (routeLayer2) {
+        map.removeLayer(routeLayer2);
+        routeLayer2 = null;
+      }
+    }
+
+    function drawRoute(coords, color) {
+      const latlngs = coords.map((c) => [c[1], c[0]]);
+      const layer = L.polyline(latlngs, {
+        color,
+        weight: 5,
+        opacity: 0.9,
+      }).addTo(map);
+      map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+      return layer;
+    }
+
+    function updateMarker(type, loc) {
+      if (!loc) return;
+      const latlng = [loc.lat, loc.lon];
+
+      if (type === "driver") {
+        if (driverMarker) map.removeLayer(driverMarker);
+        driverMarker = L.marker(latlng, { title: "Vodič" }).addTo(map);
+      } else if (type === "pickup") {
+        if (pickupMarker) map.removeLayer(pickupMarker);
+        pickupMarker = L.marker(latlng, { title: "Nástup" }).addTo(map);
+      } else if (type === "dropoff") {
+        if (dropoffMarker) map.removeLayer(dropoffMarker);
+        dropoffMarker = L.marker(latlng, { title: "Cieľ" }).addTo(map);
+      }
+    }
+
+    // ---------------------------------------------------------
+    // Autocomplete + ORS geocode
+    // ---------------------------------------------------------
+    async function fetchSuggestions(query) {
+      if (!query || query.length < 3) return [];
+      const url =
+        "https://api.openrouteservice.org/geocode/search?api_key=" +
+        encodeURIComponent(ORS_API_KEY) +
+        "&text=" +
+        encodeURIComponent(query) +
+        "&boundary.country=SK&size=5";
+      const res = await fetch(url);
+      const data = await res.json();
+      return (data.features || []).map((f) => ({
+        lat: f.geometry.coordinates[1],
+        lon: f.geometry.coordinates[0],
+        label: f.properties.label,
+      }));
+    }
+
+    function showSuggestions(container, items, onSelect) {
+      if (!items.length) {
+        container.style.display = "none";
+        return;
+      }
+      container.innerHTML = "";
+      items.forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "suggestion-item";
+        div.textContent = item.label;
+        div.onclick = () => {
+          onSelect(item);
+          container.style.display = "none";
+        };
+        container.appendChild(div);
+      });
+      container.style.display = "block";
+    }
+
+    function debounce(fn, delay) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    const driverInput = document.getElementById("driverInput");
+    const pickupInput = document.getElementById("pickupInput");
+    const dropoffInput = document.getElementById("dropoffInput");
+
+    const driverSuggestions = document.getElementById("driverSuggestions");
+    const pickupSuggestions = document.getElementById("pickupSuggestions");
+    const dropoffSuggestions = document.getElementById("dropoffSuggestions");
+
+    let driverLocation = null;
+    let pickupLocation = null;
+    let dropoffLocation = null;
+
+    const handleDriverInput = debounce(async () => {
+      const q = driverInput.value.trim();
+      const suggestions = await fetchSuggestions(q);
+      showSuggestions(driverSuggestions, suggestions, (item) => {
+        driverLocation = item;
+        driverInput.value = item.label;
+        updateMarker("driver", driverLocation);
+      });
+    }, 300);
+
+    const handlePickupInput = debounce(async () => {
+      const q = pickupInput.value.trim();
+      const suggestions = await fetchSuggestions(q);
+      showSuggestions(pickupSuggestions, suggestions, (item) => {
+        pickupLocation = item;
+        pickupInput.value = item.label;
+        updateMarker("pickup", pickupLocation);
+      });
+    }, 300);
+
+    const handleDropoffInput = debounce(async () => {
+      const q = dropoffInput.value.trim();
+      const suggestions = await fetchSuggestions(q);
+      showSuggestions(dropoffSuggestions, suggestions, (item) => {
+        dropoffLocation = item;
+        dropoffInput.value = item.label;
+        updateMarker("dropoff", dropoffLocation);
+      });
+    }, 300);
+
+    driverInput.oninput = () => {
+      driverLocation = null;
+      handleDriverInput();
+    };
+    pickupInput.oninput = () => {
+      pickupLocation = null;
+      handlePickupInput();
+    };
+    dropoffInput.oninput = () => {
+      dropoffLocation = null;
+      handleDropoffInput();
+    };
+
+    document.addEventListener("click", (e) => {
+      if (!driverSuggestions.contains(e.target) && e.target !== driverInput)
+        driverSuggestions.style.display = "none";
+      if (!pickupSuggestions.contains(e.target) && e.target !== pickupInput)
+        pickupSuggestions.style.display = "none";
+      if (!dropoffSuggestions.contains(e.target) && e.target !== dropoffInput)
+        dropoffSuggestions.style.display = "none";
+    });
+
+    // ---------------------------------------------------------
+    // GPS
+    // ---------------------------------------------------------
+    const gpsBtn = document.getElementById("gpsBtn");
+    const driverAsPickupBtn = document.getElementById("driverAsPickupBtn");
+
+    gpsBtn.onclick = () => {
+      if (!navigator.geolocation) {
+        alert("Toto zariadenie nepodporuje GPS.");
+        return;
+      }
+
+      gpsBtn.disabled = true;
+      gpsBtn.textContent = "Získavam polohu...";
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          try {
+            const url =
+              "https://api.openrouteservice.org/geocode/reverse?api_key=" +
+              encodeURIComponent(ORS_API_KEY) +
+              "&point.lon=" +
+              lon +
+              "&point.lat=" +
+              lat;
+            const res = await fetch(url);
+            const data = await res.json();
+            const label =
+              data.features?.[0]?.properties?.label || "Moja poloha";
+
+            driverLocation = { lat, lon, label };
+            driverInput.value = label;
+            updateMarker("driver", driverLocation);
+            map.setView([lat, lon], 14);
+          } catch {
+            alert("Nepodarilo sa získať adresu z GPS.");
+          }
+
+          gpsBtn.disabled = false;
+          gpsBtn.textContent = "Použiť moju polohu";
+        },
+        () => {
+          alert("Nepodarilo sa získať GPS polohu.");
+          gpsBtn.disabled = false;
+          gpsBtn.textContent = "Použiť moju polohu";
+        }
+      );
+    };
+
+    driverAsPickupBtn.onclick = () => {
+      if (!driverLocation) {
+        alert("Najprv nastavte polohu vozidla.");
+        return;
+      }
+      pickupLocation = { ...driverLocation };
+      pickupInput.value = driverLocation.label;
+      updateMarker("pickup", pickupLocation);
+    };
+
+    // ---------------------------------------------------------
+    // Routing a výpočet ceny
+    // ---------------------------------------------------------
+    async function getRoute(from, to) {
+      const url =
+        "https://api.openrouteservice.org/v2/directions/driving-car/geojson";
+      const body = {
+        coordinates: [
+          [from.lon, from.lat],
+          [to.lon, to.lat],
+        ],
+      };
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: ORS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const meters = data.features[0].properties.summary.distance;
+      const coords = data.features[0].geometry.coordinates;
+      return { km: meters / 1000, coords };
+    }
+
+    function euro(v) {
+      return v.toFixed(2).replace(".", ",") + " €";
+    }
+
+    let mode = "taxi";
+    const modeTaxiBtn = document.getElementById("modeTaxi");
+    const modeSeniorBtn = document.getElementById("modeSenior");
+    const modeInfo = document.getElementById("modeInfo");
+
+    function applyMode() {
+      if (mode === "taxi") {
+        modeTaxiBtn.classList.add("active-taxi");
+        modeSeniorBtn.classList.remove("active-senior");
+        modeInfo.textContent = "Štandardná jazda taxi podľa kilometrov.";
+      } else {
+        modeTaxiBtn.classList.remove("active-taxi");
+        modeSeniorBtn.classList.add("active-senior");
+        modeInfo.textContent =
+          "Senior jazda so zvýhodnenou cenou a možnosťou pridať ďalších klientov.";
+      }
+    }
+
+    modeTaxiBtn.onclick = () => {
+      mode = "taxi";
+      applyMode();
+    };
+    modeSeniorBtn.onclick = () => {
+      mode = "senior";
+      applyMode();
+    };
+
+    const calcBtn = document.getElementById("calcBtn");
+    const resultBox = document.getElementById("resultBox");
+    const orderActions = document.getElementById("orderActions");
+    const orderSmsBtn = document.getElementById("orderSmsBtn");
+    const orderMailBtn = document.getElementById("orderMailBtn");
+
+    let lastPrice = 0;
+    let lastKmDojazd = 0;
+    let lastKmTrasa = 0;
+
+    calcBtn.onclick = async () => {
+      if (!driverLocation || !pickupLocation || !dropoffLocation) {
+        alert("Vyplňte polohu vozidla, nástup aj cieľ.");
+        return;
+      }
+
+      calcBtn.disabled = true;
+      calcBtn.textContent = "Počítam...";
+      clearRoutes();
+
+      try {
+        // Dojazd vodiča
+        let kmDojazd = 0;
+        let cenaDojazd = 0;
+        let dojazdCoords = [];
+
+        const samePoint =
+          driverLocation.lat === pickupLocation.lat &&
+          driverLocation.lon === pickupLocation.lon;
+
+        if (!samePoint) {
+          const dojazd = await getRoute(driverLocation, pickupLocation);
+          kmDojazd = dojazd.km;
+          cenaDojazd = kmDojazd * 0.4;
+          dojazdCoords = dojazd.coords;
+        }
+
+        // Trasa s klientom
+        const trasa = await getRoute(pickupLocation, dropoffLocation);
+        const kmTrasa = trasa.km;
+        const cenaTrasa = kmTrasa * 0.85;
+
+        const zaklad = cenaDojazd + cenaTrasa;
+
+        let final = zaklad;
+        let note = "";
+
+        if (mode === "senior") {
+          final = zaklad * 0.55;
+          note =
+            "Uplatnená zľava 45 % – cena je za 1 osobu na danej trase. Možnosť pridať ďalších klientov.";
+        }
+
+        if (dojazdCoords.length)
+          routeLayer1 = drawRoute(dojazdCoords, "#3ddcff");
+        routeLayer2 = drawRoute(trasa.coords, "#ff5252");
+
+        lastPrice = final;
+        lastKmDojazd = kmDojazd;
+        lastKmTrasa = kmTrasa;
+
+        resultBox.style.display = "block";
+        resultBox.innerHTML = `
+          <div class="result-row">
+            <span class="label">Dojazd vodiča</span>
+            <span class="value">${
+              samePoint ? "0,00" : kmDojazd.toFixed(2).replace(".", ",")
+            } km · ${euro(cenaDojazd)}</span>
+          </div>
+          <div class="result-row">
+            <span class="label">Trasa s klientom</span>
+            <span class="value">${kmTrasa
+              .toFixed(2)
+              .replace(".", ",")} km · ${euro(cenaTrasa)}</span>
+          </div>
+          <div class="result-row">
+            <span class="label">Základná cena</span>
+            <span class="value">${euro(zaklad)}</span>
+          </div>
+          <div class="result-row">
+            <span class="label">${
+              mode === "senior" ? "Cena po zľave" : "Konečná cena"
+            }</span>
+            <span class="value">${euro(final)}</span>
+          </div>
+          ${
+            note
+              ? `<div class="result-note">${note}</div>`
+              : `<div class="result-note">Cena je orientačná, podľa reálnej trasy.</div>`
+          }
+        `;
+
+        orderActions.style.display = "flex";
+      } catch (e) {
+        console.error(e);
+        alert("Nepodarilo sa získať trasu z OpenRouteService.");
+      }
+
+      calcBtn.disabled = false;
+      calcBtn.textContent = "Vypočítať cenu";
+    };
+
+    // ---------------------------------------------------------
+    // Objednávka – SMS / Email
+    // ---------------------------------------------------------
+    function buildOrderText() {
+      const modeLabel = mode === "taxi" ? "Taxi" : "Senior";
+      const pickupLabel = pickupLocation?.label || pickupInput.value.trim();
+      const dropoffLabel = dropoffLocation?.label || dropoffInput.value.trim();
+      return (
+        modeLabel +
+        " jazda\n" +
+        "Nástup: " +
+        pickupLabel +
+        "\n" +
+        "Cieľ: " +
+        dropoffLabel +
+        "\n" +
+        "Dojazd vodiča: " +
+        lastKmDojazd.toFixed(2) +
+        " km\n" +
+        "Trasa s klientom: " +
+        lastKmTrasa.toFixed(2) +
+        " km\n" +
+        "Cena: " +
+        lastPrice.toFixed(2) +
+        " €"
+      );
+    }
+
+    // DOPLŇ SVOJE KONTAKTY
+    const ORDER_EMAIL = "objednavky@flajster.sk";
+    const ORDER_PHONE = "+421900123456";
+
+    orderSmsBtn.onclick = () => {
+      const body = encodeURIComponent(buildOrderText());
+      window.location.href = `sms:${encodeURIComponent(
+        ORDER_PHONE
+      )}?body=${body}`;
+    };
+
+    orderMailBtn.onclick = () => {
+      const subject = encodeURIComponent("Objednávka jazdy – Flajster");
+      const body = encodeURIComponent(buildOrderText());
+      window.location.href = `mailto:${ORDER_EMAIL}?subject=${subject}&body=${body}`;
+    };
+  </script>
+</body>
+</html>
