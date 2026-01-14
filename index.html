@@ -180,126 +180,9 @@
     .suggestion-item:hover {
       background: rgba(255, 255, 255, 0.06);
     }
-
-    .mode-toggle {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .mode-btn {
-      flex: 1;
-      border-radius: 999px;
-      padding: 8px 10px;
-      font-size: 13px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--muted);
-      cursor: pointer;
-    }
-
-    .mode-btn.active-taxi {
-      background: var(--accent-taxi);
-      color: #000;
-      border-color: transparent;
-    }
-
-    .mode-btn.active-senior {
-      background: var(--accent-senior);
-      color: #000;
-      border-color: transparent;
-    }
-
-    .pill-info {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 6px;
-    }
-
-    .btn-primary {
-      width: 100%;
-      border-radius: 999px;
-      padding: 11px 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      margin-top: 8px;
-      background: linear-gradient(135deg, #00ffa3, #3ddcff);
-      color: #000;
-      box-shadow: 0 12px 30px rgba(0, 255, 163, 0.35);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.4;
-      box-shadow: none;
-      cursor: default;
-    }
-
-    .result-card {
-      margin-top: 8px;
-      padding: 12px;
-      border-radius: var(--radius-md);
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 14px;
-    }
-
-    .result-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-
-    .result-row span.label {
-      color: var(--muted);
-    }
-
-    .result-row span.value {
-      font-weight: 600;
-    }
-
-    .result-note {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 6px;
-    }
-
-    .order-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .btn-outline {
-      flex: 1;
-      border-radius: 999px;
-      padding: 9px 10px;
-      font-size: 13px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--text);
-      cursor: pointer;
-    }
-
-    .btn-outline.sms {
-      border-color: var(--accent-senior);
-      color: var(--accent-senior);
-    }
-
-    .btn-outline.mail {
-      border-color: var(--accent-taxi);
-      color: var(--accent-taxi);
-    }
-
-    .footer-note {
-      margin-top: 14px;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-    }
   </style>
 </head>
+
 <body>
   <div class="app">
     <div class="header">
@@ -323,7 +206,6 @@
         </button>
       </div>
     </div>
-
     <div class="card">
       <div class="field-group">
         <div class="field-label">Poloha vozidla</div>
@@ -386,10 +268,10 @@
       </div>
     </div>
   </div>
-
   <script>
-    // 🔑 DOPLŇ SVOJ ORS API KĽÚČ
-    const ORS_API_KEY = "SEM_DAJ_SVOJ_ORS_API_KEY";
+    // 🔑 TVOJ ORS API KĽÚČ
+    const ORS_API_KEY =
+      "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVjNDY1YWFiMTFjNjQ4MWM4MWM0M2RhOWI5MmZiMDg3IiwiaCI6Im11cm11cjY0In0=";
 
     // ---------------------------------------------------------
     // Mapa a markery
